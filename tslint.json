@@ -87,7 +87,6 @@
     "quotemark": [true, "single", "jsx-double"],
     "return-undefined": true,
     "semicolon": [true, "always", "ignore-interfaces", "ignore-bound-class-methods"],
-    "variable-name": [true, "ban-keywords", "check-format"],
     "whitespace": [
       true,
       "check-branch",
