@@ -54,7 +54,17 @@ class MessageHandler {
                     }
 
                     if (message.text.startsWith('.robin assign')) {
-                        const user = data.users[Math.floor(Math.random() * data.users.length)];
+
+                        console.log(message.user);
+
+                        const i = data.users.indexOf(`<@${message.user}>`);
+                        const copy = data.users.slice();
+                        console.dir(copy);
+                        if (i !== -1) {
+                            copy.splice(i, 1);
+                        }
+                        console.dir(copy);
+                        const user = copy[Math.floor(Math.random() * copy.length)];
 
                         this.rtmClient.sendMessage(`${user} has been randomly assigned to ${test}`, message.channel);
                     }

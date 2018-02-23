@@ -32,6 +32,7 @@ var MessageHandler = (function () {
                             }
                             if (!data.users.includes(element)) {
                                 console.log("user " + element + " does not exist... adding...");
+                                _this.rtmClient.sendMessage("adding " + element + "...", message.channel);
                                 data.users.push(element);
                                 _this.save(data);
                             }
@@ -41,7 +42,15 @@ var MessageHandler = (function () {
                         });
                     }
                     if (message.text.startsWith('.robin assign')) {
-                        var user = data.users[Math.floor(Math.random() * data.users.length)];
+                        console.log(message.user);
+                        var i = data.users.indexOf("<@" + message.user + ">");
+                        var copy = data.users.slice();
+                        console.dir(copy);
+                        if (i !== -1) {
+                            copy.splice(i, 1);
+                        }
+                        console.dir(copy);
+                        var user = copy[Math.floor(Math.random() * copy.length)];
                         _this.rtmClient.sendMessage(user + " has been randomly assigned to " + test, message.channel);
                     }
                     if (message.text.startsWith('.robin list')) {
