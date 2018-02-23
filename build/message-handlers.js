@@ -17,51 +17,65 @@ var MessageHandler = (function () {
         var userNameRegex = new RegExp('^\<\@[A-Za-z0-9]+\>$');
         this.rtmClient.on(RTM_EVENTS.MESSAGE, function (message) {
             console.log(message);
-            if (message.text.startsWith('.robin')) {
-                data = _this.load();
-                var blah = message.text.split(' ');
-                blah.shift();
-                blah.shift();
-                var test = blah.join(' ');
-                console.log(test);
-                if (message.text.startsWith('.robin add')) {
-                    if (!userNameRegex.test(test)) {
-                        _this.rtmClient.sendMessage("wrong command... use `.robin add @username`", message.channel);
-                        return;
+            data = _this.load();
+            try {
+                if (message && message.text && message.text.startsWith('.robin')) {
+                    var blah = message.text.split(' ');
+                    blah.shift();
+                    blah.shift();
+                    var test = blah.join(' ');
+                    console.log(test);
+                    if (message.text.startsWith('.robin add')) {
+                        test.split(' ').forEach(function (element) {
+                            if (!userNameRegex.test(element)) {
+                                return;
+                            }
+                            if (!data.users.includes(element)) {
+                                console.log("user " + element + " does not exist... adding...");
+                                data.users.push(element);
+                                _this.save(data);
+                            }
+                            else {
+                                console.log("user " + element + " already exists...");
+                            }
+                        });
                     }
-                    if (!data.users.includes(test)) {
-                        console.log("user " + test + " does not exist... adding...");
-                        data.users.push(test);
-                        _this.save(data);
+                    if (message.text.startsWith('.robin assign')) {
+                        var user = data.users[Math.floor(Math.random() * data.users.length)];
+                        _this.rtmClient.sendMessage(user + " has been randomly assigned to " + test, message.channel);
                     }
-                    else {
-                        console.log("user " + test + " already exists...");
-                    }
-                }
-                if (message.text.startsWith('.robin assign')) {
-                    var user = data.users[Math.floor(Math.random() * data.users.length)];
-                    _this.rtmClient.sendMessage(user + " has been randomly assigned to " + test, message.channel);
-                }
-                if (message.text.startsWith('.robin list')) {
-                    _this.rtmClient.sendMessage("here are the users I have currently... " + data.users.join(', '), message.channel);
-                }
-                if (message.text.startsWith('.robin remove')) {
-                    if (!userNameRegex.test(test)) {
-                        _this.rtmClient.sendMessage("wrong command... use `.robin remove @username`", message.channel);
-                        return;
-                    }
-                    if (!data.users.includes(test)) {
-                        _this.rtmClient.sendMessage("that user doesn't exist...", message.channel);
-                    }
-                    else {
-                        var index = data.users.indexOf(test);
-                        if (index !== -1) {
-                            data.users.splice(index, 1);
+                    if (message.text.startsWith('.robin list')) {
+                        console.log(data.users);
+                        if (data.users.length > 0) {
+                            _this.rtmClient.sendMessage("here are the users I have currently... " + data.users.join(', '), message.channel);
                         }
-                        _this.rtmClient.sendMessage("removing " + test + "...", message.channel);
-                        _this.save(data);
+                        else {
+                            _this.rtmClient.sendMessage("there are no users added yet. type `.robin add @username @anotheruser` to add some", message.channel);
+                        }
+                    }
+                    if (message.text.startsWith('.robin remove')) {
+                        test.split(' ').forEach(function (element) {
+                            if (!userNameRegex.test(element)) {
+                                return;
+                            }
+                            if (!data.users.includes(element)) {
+                                _this.rtmClient.sendMessage("that user doesn't exist...", message.channel);
+                            }
+                            else {
+                                var index = data.users.indexOf(element);
+                                if (index !== -1) {
+                                    data.users.splice(index, 1);
+                                }
+                                _this.rtmClient.sendMessage("removing " + element + "...", message.channel);
+                                _this.save(data);
+                            }
+                        });
                     }
                 }
+            }
+            catch (err) {
+                console.log(err);
+                _this.rtmClient.sendMessage("something bad happened...", message.channel);
             }
         });
     };

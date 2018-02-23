@@ -24,64 +24,73 @@ class MessageHandler {
 
         this.rtmClient.on(RTM_EVENTS.MESSAGE, (message: MessageEvent) => {
             console.log(message);
+            data = this.load();
 
+            try {
+                if (message && message.text && message.text.startsWith('.robin')) {
 
-            if (message && message.text && message.text.startsWith('.robin')) {
-                data = this.load();
+                    // make this better...
+                    const blah = message.text.split(' ');
+                    blah.shift();
+                    blah.shift();
+                    const test = blah.join(' ');
+                    console.log(test);
 
-                // make this better...
-                const blah = message.text.split(' ');
-                blah.shift();
-                blah.shift();
-                const test = blah.join(' ');
-                console.log(test);
+                    if (message.text.startsWith('.robin add')) {
+                        test.split(' ').forEach(element => {
+                            if (!userNameRegex.test(element)) {
+                                return;
+                            }
 
-                if (message.text.startsWith('.robin add')) {
-                    if (!userNameRegex.test(test)) {
-                        this.rtmClient.sendMessage(`wrong command... use \`.robin add @username\``, message.channel);
-
-                        return;
+                            if (!data.users.includes(element)) {
+                                console.log(`user ${element} does not exist... adding...`);
+                                this.rtmClient.sendMessage(`adding ${element}...`, message.channel);
+                                data.users.push(element);
+                                this.save(data);
+                            } else {
+                                console.log(`user ${element} already exists...`);
+                            }
+                        });
                     }
 
-                    if (!data.users.includes(test)) {
-                        console.log(`user ${test} does not exist... adding...`);
-                        data.users.push(test);
-                        this.save(data);
-                    } else {
-                        console.log(`user ${test} already exists...`);
-                    }
-                }
+                    if (message.text.startsWith('.robin assign')) {
+                        const user = data.users[Math.floor(Math.random() * data.users.length)];
 
-                if (message.text.startsWith('.robin assign')) {
-                    const user = data.users[Math.floor(Math.random() * data.users.length)];
-
-                    this.rtmClient.sendMessage(`${user} has been randomly assigned to ${test}`, message.channel);
-                }
-
-                if (message.text.startsWith('.robin list')) {
-                    this.rtmClient.sendMessage(`here are the users I have currently... ${data.users.join(', ')}`, message.channel);
-                }
-
-                if (message.text.startsWith('.robin remove')) {
-                    if (!userNameRegex.test(test)) {
-                        this.rtmClient.sendMessage(`wrong command... use \`.robin remove @username\``, message.channel);
-
-                        return;
+                        this.rtmClient.sendMessage(`${user} has been randomly assigned to ${test}`, message.channel);
                     }
 
-                    if (!data.users.includes(test)) {
-                        this.rtmClient.sendMessage(`that user doesn't exist...`, message.channel);
-                    } else {
-                        const index = data.users.indexOf(test);    // <-- Not supported in <IE9
-                        if (index !== -1) {
-                            data.users.splice(index, 1);
+                    if (message.text.startsWith('.robin list')) {
+                        console.log(data.users);
+                        if (data.users.length > 0) {
+                            this.rtmClient.sendMessage(`here are the users I have currently... ${data.users.join(', ')}`, message.channel);
+                        } else {
+                            this.rtmClient.sendMessage(`there are no users added yet. type \`.robin add @username @anotheruser\` to add some`, message.channel);
                         }
-                        this.rtmClient.sendMessage(`removing ${test}...`, message.channel);
-                        this.save(data);
+                    }
+
+                    if (message.text.startsWith('.robin remove')) {
+                        test.split(' ').forEach(element => {
+                            if (!userNameRegex.test(element)) {
+                                return;
+                            }
+
+                            if (!data.users.includes(element)) {
+                                this.rtmClient.sendMessage(`that user doesn't exist...`, message.channel);
+                            } else {
+                                const index = data.users.indexOf(element);    // <-- Not supported in <IE9
+                            if (index !== -1) {
+                                data.users.splice(index, 1);
+                            }
+                            this.rtmClient.sendMessage(`removing ${element}...`, message.channel);
+                            this.save(data);
+                            }
+                        });
                     }
                 }
+            } catch (err) {
+                console.log(err);
+                this.rtmClient.sendMessage(`something bad happened...`, message.channel);
             }
-
         });
     }
 
