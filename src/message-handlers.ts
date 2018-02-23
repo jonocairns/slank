@@ -26,7 +26,7 @@ class MessageHandler {
             console.log(message);
 
 
-            if (message.text.startsWith('.robin')) {
+            if (message && message.text && message.text.startsWith('.robin')) {
                 data = this.load();
 
                 // make this better...
