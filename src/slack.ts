@@ -41,7 +41,6 @@ declare module 'slack' {
   }
 
   class _RtmClientBase {
-    ws: WebSocket;
 
     MAX_RECONNECTION_ATTEMPTS: number;
     RECONNECTION_BACKOFF: number;
