@@ -4,7 +4,8 @@
   "description": "A bot for slack",
   "main": "src/index.ts",
   "scripts": {
-    "start": "ts-node src/index.ts",
+    "start-js": "node src/index.js",
+    "start-ts": "ts-node src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
     "watch": "nodemon --watch src/**/*.ts --exec ts-node src/index.ts",
     "postinstall": "npm run build",
