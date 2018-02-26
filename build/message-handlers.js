@@ -9,7 +9,7 @@ var MessageHandler = (function () {
     MessageHandler.prototype.bind = function () {
         var _this = this;
         console.log('binding message event handlers...');
-        var data = this.load();
+        this.load();
         this.rtmClient.on(CLIENT_EVENTS.RTM.AUTHENTICATED, function (rtmStartData) {
             _this.channelList = rtmStartData.channels;
             console.log("Logged in as " + rtmStartData.self.name + " of team " + rtmStartData.team.name + ", but not yet connected to a channel");
@@ -17,7 +17,7 @@ var MessageHandler = (function () {
         var userNameRegex = new RegExp('^\<\@[A-Za-z0-9]+\>$');
         this.rtmClient.on(RTM_EVENTS.MESSAGE, function (message) {
             console.log(message);
-            data = _this.load();
+            _this.load();
             try {
                 if (message && message.text && message.text.startsWith('.robin')) {
                     var blah = message.text.split(' ');
@@ -33,8 +33,8 @@ var MessageHandler = (function () {
                             if (!data.users.includes(element)) {
                                 console.log("user " + element + " does not exist... adding...");
                                 _this.rtmClient.sendMessage("adding " + element + "...", message.channel);
-                                data.users.push(element);
-                                _this.save(data);
+                                _this.data.users.push(element);
+                                _this.save();
                             }
                             else {
                                 console.log("user " + element + " already exists...");
@@ -43,19 +43,12 @@ var MessageHandler = (function () {
                     }
                     if (message.text.startsWith('.robin assign')) {
                         console.log(message.user);
-                        var i = data.users.indexOf("<@" + message.user + ">");
-                        var copy = data.users.slice();
-                        console.dir(copy);
-                        if (i !== -1) {
-                            copy.splice(i, 1);
-                        }
-                        console.dir(copy);
-                        var user = copy[Math.floor(Math.random() * copy.length)];
-                        _this.rtmClient.sendMessage(user + " has been randomly assigned to " + test, message.channel);
+                        var assignee = _this.getNextUser(message.user);
+                        _this.rtmClient.sendMessage(assignee + " has been randomly assigned to " + test, message.channel);
                     }
                     if (message.text.startsWith('.robin list')) {
                         console.log(data.users);
-                        if (data.users.length > 0) {
+                        if (_this.data.users.length > 0) {
                             _this.rtmClient.sendMessage("here are the users I have currently... " + data.users.join(', '), message.channel);
                         }
                         else {
@@ -67,16 +60,16 @@ var MessageHandler = (function () {
                             if (!userNameRegex.test(element)) {
                                 return;
                             }
-                            if (!data.users.includes(element)) {
+                            if (!_this.data.users.includes(element)) {
                                 _this.rtmClient.sendMessage("that user doesn't exist...", message.channel);
                             }
                             else {
-                                var index = data.users.indexOf(element);
+                                var index = _this.data.users.indexOf(element);
                                 if (index !== -1) {
-                                    data.users.splice(index, 1);
+                                    _this.data.users.splice(index, 1);
                                 }
                                 _this.rtmClient.sendMessage("removing " + element + "...", message.channel);
-                                _this.save(data);
+                                _this.save();
                             }
                         });
                     }
@@ -88,12 +81,21 @@ var MessageHandler = (function () {
             }
         });
     };
+    MessageHandler.prototype.getNextUser = function (thisUser) {
+        if (this.userQueue == null || !this.userQueue.some(function (user) { return user !== thisUser; })) {
+            this.userQueue = this.data.users.slice();
+            this.userQueue.sort(function () { return Math.round(Math.random()) * 2 - 1; });
+        }
+        var idx = this.userQueue.findIndex(function (user) { return user !== thisUser; });
+        var user = this.userQueue.splice(idx, 1)[0];
+        return user;
+    };
     MessageHandler.prototype.load = function () {
         var rawdata = fs.readFileSync('./src/data.json');
-        return JSON.parse(rawdata);
+        this.data = JSON.parse(rawdata);
     };
-    MessageHandler.prototype.save = function (data) {
-        var dataString = JSON.stringify(data);
+    MessageHandler.prototype.save = function () {
+        var dataString = JSON.stringify(this.data);
         fs.writeFileSync('./src/data.json', dataString);
     };
     return MessageHandler;

@@ -5,6 +5,8 @@ const fs = require('fs');
 
 class MessageHandler {
     channelList: Array<any>;
+    data: any;
+    userQueue: Array<string>;
 
     constructor(private rtmClient: RtmClient) {
         rtmClient.start();
@@ -13,7 +15,7 @@ class MessageHandler {
     public bind() {
         console.log('binding message event handlers...');
 
-        let data = this.load();
+        this.load();
 
         this.rtmClient.on(CLIENT_EVENTS.RTM.AUTHENTICATED, (rtmStartData: RtmStartResult) => {
             this.channelList = rtmStartData.channels;
@@ -24,7 +26,7 @@ class MessageHandler {
 
         this.rtmClient.on(RTM_EVENTS.MESSAGE, (message: MessageEvent) => {
             console.log(message);
-            data = this.load();
+            this.load();
 
             try {
                 if (message && message.text && message.text.startsWith('.robin')) {
@@ -45,8 +47,8 @@ class MessageHandler {
                             if (!data.users.includes(element)) {
                                 console.log(`user ${element} does not exist... adding...`);
                                 this.rtmClient.sendMessage(`adding ${element}...`, message.channel);
-                                data.users.push(element);
-                                this.save(data);
+                                this.data.users.push(element);
+                                this.save();
                             } else {
                                 console.log(`user ${element} already exists...`);
                             }
@@ -57,21 +59,14 @@ class MessageHandler {
 
                         console.log(message.user);
 
-                        const i = data.users.indexOf(`<@${message.user}>`);
-                        const copy = data.users.slice();
-                        console.dir(copy);
-                        if (i !== -1) {
-                            copy.splice(i, 1);
-                        }
-                        console.dir(copy);
-                        const user = copy[Math.floor(Math.random() * copy.length)];
+                        const assignee = this.getNextUser(message.user);
 
-                        this.rtmClient.sendMessage(`${user} has been randomly assigned to ${test}`, message.channel);
+                        this.rtmClient.sendMessage(`${assignee} has been randomly assigned to ${test}`, message.channel);
                     }
 
                     if (message.text.startsWith('.robin list')) {
                         console.log(data.users);
-                        if (data.users.length > 0) {
+                        if (this.data.users.length > 0) {
                             this.rtmClient.sendMessage(`here are the users I have currently... ${data.users.join(', ')}`, message.channel);
                         } else {
                             this.rtmClient.sendMessage(`there are no users added yet. type \`.robin add @username @anotheruser\` to add some`, message.channel);
@@ -84,15 +79,15 @@ class MessageHandler {
                                 return;
                             }
 
-                            if (!data.users.includes(element)) {
+                            if (!this.data.users.includes(element)) {
                                 this.rtmClient.sendMessage(`that user doesn't exist...`, message.channel);
                             } else {
-                                const index = data.users.indexOf(element);    // <-- Not supported in <IE9
+                                const index = this.data.users.indexOf(element);    // <-- Not supported in <IE9
                             if (index !== -1) {
-                                data.users.splice(index, 1);
+                                this.data.users.splice(index, 1);
                             }
                             this.rtmClient.sendMessage(`removing ${element}...`, message.channel);
-                            this.save(data);
+                            this.save();
                             }
                         });
                     }
@@ -104,14 +99,33 @@ class MessageHandler {
         });
     }
 
-    private load(): any {
-        const rawdata = fs.readFileSync('./src/data.json');
+    private getNextUser(thisUser: string): string {
+        if (this.userQueue == null || !this.userQueue.some(user => user !== thisUser)) {
+            const unrandomizedUsers = this.data.users.slice();
+            this.userQueue = [];
+            while (unrandomizedUsers.length > 0) {
+                const randomIdx = Math.floor(Math.random() * unrandomizedUsers.length);
+                const [randomUser] = unrandomizedUsers.splice(randomIdx, 1);
+                this.userQueue.push(randomUser);
+            }
+        }
 
-        return JSON.parse(rawdata);
+        const idx = this.userQueue.findIndex(user => user !== thisUser);
+        const [selectedUser] = this.userQueue.splice(idx, 1);
+
+        return selectedUser;
     }
 
-    private save(data: any): void {
-        const dataString = JSON.stringify(data);
+
+    private load(): void {
+        const rawdata = fs.readFileSync('./src/data.json');
+
+        this.data = JSON.parse(rawdata);
+        this.userQueue = null;
+    }
+
+    private save(): void {
+        const dataString = JSON.stringify(this.data);
         fs.writeFileSync('./src/data.json', dataString);
     }
 }
